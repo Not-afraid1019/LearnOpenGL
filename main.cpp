@@ -76,7 +76,7 @@ void prepareCamera() {
                                    1000.0f);
 
     auto control = new GameCameraControl();
-    control->setSpeed(0.5f);
+    control->setSpeed(0.005f);
 //    control->setSpeed(1.0f);
     cameraControl = control;
     cameraControl->setCamera(camera);
@@ -87,19 +87,29 @@ void prepare() {
     renderer = new Renderer();
 
     scene = new Scene();
-    auto testModel = AssimpLoader::load("assets/fbx/maga.fbx");
-//    auto testModel = AssimpLoader::load("assets/fbx/79059.fbx");
-    scene->addChild(testModel);
+//    auto testModel = AssimpLoader::load("assets/fbx/maga.fbx");
+//    scene->addChild(testModel);
 
-//    auto geometry = Geometry::createBox(1.0f);
-//    // 2 创建一个material并且配置参数
-//    auto material = new PhongMaterial();
-//    material->mShiness = 64.0f;
-//    material->mDiffuse = new Texture("assets/textures/box.png", 0);
-//    material->mSpecularMask = new Texture("assets/textures/sp_mask.png", 1);
-//    // 3 生成mesh
-//    auto mesh = new Mesh(geometry, material);
-//    scene->addChild(mesh);
+    auto geometry = Geometry::createPlane(5.0f, 5.0f);
+    auto materialA = new PhongMaterial();
+    materialA->mDiffuse = Texture::createTexture("assets/textures/goku.jpg", 0);
+    auto meshA = new Mesh(geometry, materialA);
+    scene->addChild(meshA);
+
+    auto materialB = new PhongMaterial();
+    materialB->mDiffuse = Texture::createTexture("assets/textures/box.png", 0);
+    materialB->mDepthWrite = false;
+    auto meshB = new Mesh(geometry, materialB);
+    meshB->setPosition(glm::vec3(2.0f, 0.5f, -1.0f));
+    scene->addChild(meshB);
+
+    auto materialC = new PhongMaterial();
+    materialC->mDiffuse = Texture::createTexture("assets/textures/wall.jpg", 0);
+    auto meshC = new Mesh(geometry, materialC);
+    meshC->setPosition(glm::vec3(4.0f, 1.0f, -2.0f));
+    scene->addChild(meshC);
+
+
 
     spotLight = new SpotLight();
     spotLight->setPosition(glm::vec3(2.0, 0.0, 0.0));

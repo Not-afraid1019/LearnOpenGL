@@ -145,8 +145,8 @@ Shader *Renderer::pickShader(MaterialType type) {
 void Renderer::render(Scene* scene, Camera *camera, DirectionalLight *dirLight,
                       AmbientLight *ambLight) {
     // 1 设置当前帧绘制的时候，opengl的必要状态机参数
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+//    glEnable(GL_DEPTH_TEST);
+//    glDepthFunc(GL_LESS);
 
     // 2 清理画布
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -161,6 +161,20 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
         auto mesh = (Mesh*)object;
         auto geometry = mesh->mGeometry;
         auto material  = mesh->mMaterial;
+
+        // 设置渲染状态
+        if (material->mDepthTest) {
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(material->mDepthFunc);
+        } else {
+            glDisable(GL_DEPTH_TEST);
+        }
+
+        if (material->mDepthWrite) {
+            glDepthMask(GL_TRUE);
+        } else {
+            glDepthMask(GL_FALSE);
+        }
 
         // 1 决定使用哪个Shader
         Shader* shader = pickShader(material->mType);
@@ -179,8 +193,8 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
                 shader->setInt("sampler", 0);
                 // 将纹理采样器与纹理单元进行挂钩
                 phongMat->mDiffuse->bind();
-                shader->setInt("specularMaskSampler", 1);
-                phongMat->mSpecularMask->bind();
+//                shader->setInt("specularMaskSampler", 1);
+//                phongMat->mSpecularMask->bind();
                 // MVP
                 shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
                 shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());
@@ -218,6 +232,10 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
     // 2 遍历object的子节点，对每个子节点都需要调用renderObject
     auto children = object->getChildren();
     for (int i = 0; i < children.size(); ++i) {
+//        if (i == 1)
+//            glDepthMask(GL_FALSE);
+//        else
+//            glDepthMask(GL_TRUE);
         renderObject(children[i], camera, dirLight, ambLight);
     }
 }

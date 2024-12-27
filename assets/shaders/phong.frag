@@ -128,13 +128,13 @@ void main()
    vec3 result = vec3(0.0f, 0.0f, 0.0f);
    // 计算光照的通用数据
    vec3 objectColor = texture(sampler, uv).xyz;
-//   vec3 normalN = normalize(normal);
+   vec3 normalN = normalize(normal);
 //   vec3 lightDirN = normalize(worldPosition - spotLight.position);
-//   vec3 viewDir = normalize(worldPosition - cameraPosition);
+   vec3 viewDir = normalize(worldPosition - cameraPosition);
 //   vec3 targetDirN = normalize(spotLight.targetDirection);
 
 //   result += calculateSpotLight(spotLight, normalN, viewDir);
-//   result += calculateDirectionalLight(directionalLight, normalN, viewDir);
+   result += calculateDirectionalLight(directionalLight, normalN, viewDir);
 
 //   for(int i = 0; i < POINT_LIGHT_NUM; i++) {
 //      result += calculatePointLight(pointLights[i], normalN, viewDir);
@@ -144,5 +144,11 @@ void main()
    vec3 ambientColor = objectColor * ambientColor;
 
    vec3 finalColor = result + ambientColor;
+
+//   float flag = step(800, gl_FragCoord.x);
+//   vec3 blendColor = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), flag);
+//   finalColor *= blendColor;
+
+
    FragColor = vec4(finalColor, 1.0);
 }

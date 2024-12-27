@@ -18,6 +18,11 @@ public:
 
 public:
     MaterialType mType;
+
+    // 深度检测相关
+    bool mDepthTest{true};
+    GLenum mDepthFunc{GL_LESS};
+    bool mDepthWrite{true};
 };
 
 
