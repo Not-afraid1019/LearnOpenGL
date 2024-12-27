@@ -6,36 +6,38 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../application/stb_image.h"
 
-//Texture *Texture::createTexture(const std::string &path, unsigned int unit) {
-//    // 1 检查是否缓存过本路径对应的纹理对象
-//    auto iter = mTextureCache.find(path);
-//    if (iter != mTextureCache.end()) {
-//        return iter->second;
-//    }
-//
-//    // 2 如果本路径对应的texture没有生成过，则重新生成
-//    auto texture = new Texture(path, unit);
-//    mTextureCache[path] = texture;
-//
-//    return texture;
-//}
-//
-//Texture *Texture::createTextureFromMemory(const std::string &path, unsigned int unit, unsigned char *dataIn, uint32_t widthIn,
-//                                uint32_t heightIn) {
-//    // 1 检查是否缓存过本路径对应的纹理对象
-//    auto iter = mTextureCache.find(path);
-//    if (iter != mTextureCache.end()) {
-//        return iter->second;
-//    }
-//
-//    // 2 如果本路径对应的texture没有生成过，则重新生成
-//    auto texture = new Texture(unit, dataIn, widthIn, heightIn);
-//    mTextureCache[path] = texture;
-//
-//    return texture;
-//}
+std::map<std::string, Texture*> Texture::mTextureCache;
 
-Texture::Texture(std::string path, unsigned int unit) {
+Texture *Texture::createTexture(const std::string &path, unsigned int unit) {
+    // 1 检查是否缓存过本路径对应的纹理对象
+    auto iter = mTextureCache.find(path);
+    if (iter != mTextureCache.end()) {
+        return iter->second;
+    }
+
+    // 2 如果本路径对应的texture没有生成过，则重新生成
+    auto texture = new Texture(path, unit);
+    mTextureCache[path] = texture;
+
+    return texture;
+}
+
+Texture *Texture::createTextureFromMemory(const std::string &path, unsigned int unit, unsigned char *dataIn, uint32_t widthIn,
+                                uint32_t heightIn) {
+    // 1 检查是否缓存过本路径对应的纹理对象
+    auto iter = mTextureCache.find(path);
+    if (iter != mTextureCache.end()) {
+        return iter->second;
+    }
+
+    // 2 如果本路径对应的texture没有生成过，则重新生成
+    auto texture = new Texture(unit, dataIn, widthIn, heightIn);
+    mTextureCache[path] = texture;
+
+    return texture;
+}
+
+Texture::Texture(const std::string& path, unsigned int unit) {
     mUnit = unit;
     // 1.stb_image 读取图片
     int channels;

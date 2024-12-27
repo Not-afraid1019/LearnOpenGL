@@ -9,10 +9,10 @@
 
 class Texture {
 public:
-//    static Texture* createTexture(const std::string& path, unsigned int unit);
-//    static Texture* createTextureFromMemory(const std::string& path, unsigned int unit, unsigned char* dataIn, uint32_t widthIn, uint32_t heightIn);
+    static Texture* createTexture(const std::string& path, unsigned int unit);
+    static Texture* createTextureFromMemory(const std::string& path, unsigned int unit, unsigned char* dataIn, uint32_t widthIn, uint32_t heightIn);
 
-    Texture(std::string path, unsigned int unit);
+    Texture(const std::string& path, unsigned int unit);
     Texture(unsigned int unit, unsigned char* dataIn, uint32_t widthIn, uint32_t heightIn);
     ~Texture();
 
