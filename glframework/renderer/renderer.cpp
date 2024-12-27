@@ -180,7 +180,7 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
                 // 将纹理采样器与纹理单元进行挂钩
                 phongMat->mDiffuse->bind();
                 shader->setInt("specularMaskSampler", 1);
-//                phongMat->mSpecularMask->bind();
+                phongMat->mSpecularMask->bind();
                 // MVP
                 shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
                 shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());

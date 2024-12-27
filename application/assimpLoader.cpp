@@ -7,6 +7,10 @@
 #include "../glframework/texture.h"
 
 Object *AssimpLoader::load(const std::string &path) {
+    // 拿出模型所在目录
+    std::size_t lastIndex = path.find_last_of("//");
+    auto rootPath = path.substr(0, lastIndex + 1);
+
     Object* rootNode = new Object();
 
     Assimp::Importer importer;
@@ -18,12 +22,12 @@ Object *AssimpLoader::load(const std::string &path) {
         return nullptr;
     }
 
-    processNode(scene->mRootNode, rootNode, scene);
+    processNode(scene->mRootNode, rootNode, scene, rootPath);
 
     return rootNode;
 }
 
-void AssimpLoader::processNode(aiNode *ainode, Object* parent, const aiScene* scene) {
+void AssimpLoader::processNode(aiNode *ainode, Object* parent, const aiScene* scene, const std::string& rootPath) {
     Object* node = new Object();
     parent->addChild(node);
 
@@ -41,16 +45,16 @@ void AssimpLoader::processNode(aiNode *ainode, Object* parent, const aiScene* sc
     for (int i = 0; i < ainode->mNumMeshes; ++i) {
         int meshID = ainode->mMeshes[i];
         aiMesh* aimesh = scene->mMeshes[meshID];
-        auto mesh = processMesh(aimesh);
+        auto mesh = processMesh(aimesh, scene, rootPath);
         node->addChild(mesh);
     }
 
     for (int i = 0; i < ainode->mNumChildren; ++i) {
-        processNode(ainode->mChildren[i], node, scene);
+        processNode(ainode->mChildren[i], node, scene, rootPath);
     }
 }
 
-Mesh* AssimpLoader::processMesh(aiMesh *aimesh) {
+Mesh* AssimpLoader::processMesh(aiMesh *aimesh, const aiScene* scene, const std::string& rootPath) {
     std::vector<float> positions;
     std::vector<float> normals;
     std::vector<float> uvs;
@@ -88,9 +92,57 @@ Mesh* AssimpLoader::processMesh(aiMesh *aimesh) {
 
     auto geometry = new Geometry(positions, normals, uvs, indices);
     auto material = new PhongMaterial();
-    material->mDiffuse = new Texture("assets/textures/grass.png", 0);
+
+    if (aimesh->mMaterialIndex >= 0) {
+        Texture* texture = nullptr;
+        aiMaterial* aiMat = scene->mMaterials[aimesh->mMaterialIndex];
+
+        // 1 读取diffuse贴图
+        texture = processTexture(aiMat, aiTextureType_DIFFUSE, scene, rootPath);
+        if (texture == nullptr) {
+            texture = Texture::createTexture("assets/textures/defaultTexture.jpg", 0);
+        }
+        texture->setUnit(0);
+        material->mDiffuse = texture;
+
+        // 读取specular贴图
+        auto specularMask = processTexture(aiMat, aiTextureType_SPECULAR, scene, rootPath);
+        if (specularMask == nullptr) {
+            specularMask = Texture::createTexture("assets/textures/defaultTexture.jpg", 0);
+        }
+        specularMask->setUnit(1);
+        material->mSpecularMask = specularMask;
+    } else {
+        material->mDiffuse = Texture::createTexture("assets/textures/defaultTexture.jpg", 0);
+    }
 
     return new Mesh(geometry, material);
+}
+
+Texture *AssimpLoader::processTexture(const aiMaterial *aiMat, const aiTextureType &type, const aiScene *scene,
+                                      const std::string &rootPath) {
+    Texture* texture = nullptr;
+    // 获取图片读取路径
+    aiString aipath;
+    aiMat->Get(AI_MATKEY_TEXTURE(type, 0), aipath);
+    if (!aipath.length) {
+        return nullptr;
+    }
+
+    // 判断是否是嵌入fbx的图片
+    const aiTexture* aitexture = scene->GetEmbeddedTexture(aipath.C_Str());
+    if (aitexture) {
+        // 图片是内嵌的
+        unsigned char* dataIn = reinterpret_cast<unsigned char*>(aitexture->pcData);
+        uint32_t widthIn = aitexture->mWidth;
+        uint32_t heightIn = aitexture->mHeight;
+        texture = Texture::createTextureFromMemory(aipath.C_Str(), 0, dataIn, widthIn, heightIn);
+    } else {
+        // 图片在硬盘上
+        std::string fullPath = rootPath + aipath.C_Str();
+        texture = Texture::createTexture(fullPath, 0);
+    }
+    return texture;
 }
 
 glm::mat4 AssimpLoader::getMat4f(aiMatrix4x4 value) {

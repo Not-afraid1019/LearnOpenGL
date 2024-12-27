@@ -70,13 +70,14 @@ void OnScroll(double offset) {
 
 void prepareCamera() {
     float size = 6.0f;
-    camera = new PerspectiveCamera(60.0f,
+    camera = new PerspectiveCamera(90.0f,
                                    (float)glApp->getWidth() / (float)glApp->getHeight(),
                                    0.1f,
-                                   100.0f);
+                                   1000.0f);
 
     auto control = new GameCameraControl();
-    control->setSpeed(1.0f);
+    control->setSpeed(0.5f);
+//    control->setSpeed(1.0f);
     cameraControl = control;
     cameraControl->setCamera(camera);
     cameraControl->setSensitivity(0.4f);
@@ -86,9 +87,8 @@ void prepare() {
     renderer = new Renderer();
 
     scene = new Scene();
-//    auto testModel = AssimpLoader::load("assets/fbx/Mercedes-Benz.fbx");
-    auto testModel = AssimpLoader::load("assets/fbx/79059.fbx");
-    testModel->setScale(glm::vec3(0.01f));
+    auto testModel = AssimpLoader::load("assets/fbx/maga.fbx");
+//    auto testModel = AssimpLoader::load("assets/fbx/79059.fbx");
     scene->addChild(testModel);
 
 //    auto geometry = Geometry::createBox(1.0f);
@@ -97,16 +97,8 @@ void prepare() {
 //    material->mShiness = 64.0f;
 //    material->mDiffuse = new Texture("assets/textures/box.png", 0);
 //    material->mSpecularMask = new Texture("assets/textures/sp_mask.png", 1);
-//
 //    // 3 生成mesh
 //    auto mesh = new Mesh(geometry, material);
-//    // 创建白色物体
-//    auto geometryWhite = Geometry::createSphere(0.1f);
-//    auto materialWhite = new WhiteMaterial();
-//    auto meshWhite = new Mesh(geometryWhite, materialWhite);
-//    meshWhite->setPosition(glm::vec3(2.0, 0.0, 0.0));
-//
-//    mesh->addChild(meshWhite);
 //    scene->addChild(mesh);
 
     spotLight = new SpotLight();
@@ -117,6 +109,7 @@ void prepare() {
 
     dirLight = new DirectionalLight();
     dirLight->mDirection = glm::vec3(1.0f);
+    dirLight->mSpecularIntensity = 0.1f;
 
     auto pointLight1 = new PointLight();
     pointLight1->setPosition(glm::vec3(1.0f, 0.0f, 0.0f));
@@ -210,7 +203,7 @@ int main() {
     while (glApp->update()) {
         cameraControl->update();
         renderer->setClearColor(clearColor);
-        renderer->render(scene, camera, dirLight, pointLights, spotLight, ambLight);
+        renderer->render(scene, camera, dirLight, ambLight);
         renderIMGUI();
     }
     // 退出程序前做相关清理

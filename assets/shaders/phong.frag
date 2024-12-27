@@ -5,13 +5,14 @@ in vec2 uv;
 in vec3 normal;
 in vec3 worldPosition;
 
-uniform sampler2D sampler;
-uniform sampler2D specularMaskSampler;
+uniform sampler2D sampler;    // diffuse贴图采样器
+uniform sampler2D specularMaskSampler; // specularMask贴图
 
 uniform vec3 ambientColor;
 
 // 相机世界位置
 uniform vec3 cameraPosition;
+
 
 uniform float shiness;
 
@@ -40,15 +41,10 @@ struct SpotLight {
    float specularIntensity;
 };
 
-uniform SpotLight spotLight;
 uniform DirectionalLight directionalLight;
-
-#define POINT_LIGHT_NUM 4
-uniform PointLight pointLights[POINT_LIGHT_NUM];
 
 // 计算漫反射光照
 vec3 calculateDiffuse(vec3 lightColor, vec3 objectColor, vec3 lightDir, vec3 normal) {
-   // 计算diffuse
    float diffuse = clamp(dot(-lightDir, normal), 0.0, 1.0);
    vec3 diffuseColor = lightColor * diffuse * objectColor;
 
@@ -68,10 +64,10 @@ vec3 calculateSpecular(vec3 lightColor, vec3 lightDir, vec3 normal, vec3 viewDir
    // 3 控制光斑大小
    specular = pow(specular, shiness);
 
-   // float specularMask = texture(specularMaskSampler, uv).r;
+    float specularMask = texture(specularMaskSampler, uv).r;
 
-   // 计算最终颜色
-   vec3 specularColor = lightColor * specular * flag * intensity;
+   // 4 计算最终颜色
+   vec3 specularColor = lightColor * specular * flag * intensity * specularMask;
 
    return specularColor;
 }
