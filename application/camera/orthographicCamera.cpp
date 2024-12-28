@@ -7,10 +7,9 @@ OrthographicCamera::OrthographicCamera(float l, float r, float t, float b, float
     : mLeft(l)
     , mRight(r)
     , mTop(t)
-    , mBottom(b)
-    , mNear(n)
-    , mFar(f) {
-
+    , mBottom(b){
+    mNear = n;
+    mFar = f;
 }
 
 OrthographicCamera::~OrthographicCamera() {

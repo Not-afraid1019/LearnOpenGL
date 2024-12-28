@@ -14,6 +14,7 @@
 #include "glframework/geometry.h"
 #include "glframework/material/phongMaterial.h"
 #include "glframework/material/whiteMaterial.h"
+#include "glframework/material/depthMaterial.h"
 
 #include "glframework/mesh.h"
 #include "glframework/renderer/renderer.h"
@@ -94,20 +95,23 @@ void prepare() {
     auto materialA = new PhongMaterial();
     materialA->mDiffuse = Texture::createTexture("assets/textures/goku.jpg", 0);
     auto meshA = new Mesh(geometry, materialA);
+
     scene->addChild(meshA);
 
     auto materialB = new PhongMaterial();
     materialB->mDiffuse = Texture::createTexture("assets/textures/box.png", 0);
-    materialB->mDepthWrite = false;
+    materialB->mPolygonOffset = true;
+    materialB->mFactor = 1.0f;
+    materialB->mUnit = 1.0f;
     auto meshB = new Mesh(geometry, materialB);
-    meshB->setPosition(glm::vec3(2.0f, 0.5f, -1.0f));
+    meshB->setPosition(glm::vec3(2.0f, 0.5f, -0.00001f));
     scene->addChild(meshB);
 
-    auto materialC = new PhongMaterial();
-    materialC->mDiffuse = Texture::createTexture("assets/textures/wall.jpg", 0);
-    auto meshC = new Mesh(geometry, materialC);
-    meshC->setPosition(glm::vec3(4.0f, 1.0f, -2.0f));
-    scene->addChild(meshC);
+//    auto materialC = new PhongMaterial();
+//    materialC->mDiffuse = Texture::createTexture("assets/textures/wall.jpg", 0);
+//    auto meshC = new Mesh(geometry, materialC);
+//    meshC->setPosition(glm::vec3(4.0f, 1.0f, -2.0f));
+//    scene->addChild(meshC);
 
 
 

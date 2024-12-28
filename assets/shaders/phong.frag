@@ -148,6 +148,7 @@ void main()
 //   float flag = step(800, gl_FragCoord.x);
 //   vec3 blendColor = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), flag);
 //   finalColor *= blendColor;
+//   finalColor = vec3(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z);
 
 
    FragColor = vec4(finalColor, 1.0);

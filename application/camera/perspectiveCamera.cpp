@@ -5,10 +5,9 @@
 
 PerspectiveCamera::PerspectiveCamera(float fovy, float aspect, float near, float far)
     : mFovy(fovy)
-    , mAspect(aspect)
-    , mNear(near)
-    , mFar(far) {
-
+    , mAspect(aspect){
+    mNear = near;
+    mFar = far;
 }
 
 PerspectiveCamera::~PerspectiveCamera() {

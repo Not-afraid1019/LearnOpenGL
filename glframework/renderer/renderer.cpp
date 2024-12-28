@@ -10,6 +10,7 @@
 Renderer::Renderer() {
     mPhongShader = new Shader("assets/shaders/phong.vert", "assets/shaders/phong.frag");
     mWhiteShader = new Shader("assets/shaders/white.vert", "assets/shaders/white.frag");
+    mDepthShader = new Shader("assets/shaders/depth.vert", "assets/shaders/depth.frag");
 }
 
 Renderer::~Renderer() {
@@ -134,6 +135,9 @@ Shader *Renderer::pickShader(MaterialType type) {
         case MaterialType::WhiteMaterial:
             result = mWhiteShader;
             break;
+        case MaterialType::DepthMaterial:
+            result = mDepthShader;
+            break;
         default:
             std::cout << "unknown material type" << std::endl;
             break;
@@ -145,8 +149,12 @@ Shader *Renderer::pickShader(MaterialType type) {
 void Renderer::render(Scene* scene, Camera *camera, DirectionalLight *dirLight,
                       AmbientLight *ambLight) {
     // 1 设置当前帧绘制的时候，opengl的必要状态机参数
-//    glEnable(GL_DEPTH_TEST);
-//    glDepthFunc(GL_LESS);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glDisable(GL_POLYGON_OFFSET_LINE);
 
     // 2 清理画布
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -174,6 +182,15 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
             glDepthMask(GL_TRUE);
         } else {
             glDepthMask(GL_FALSE);
+        }
+
+        // 检测polygonOffset
+        if (material->mPolygonOffset) {
+            glEnable(material->mPolygonOffsetType);
+            glPolygonOffset(material->mFactor, material->mUnit);
+        } else {
+            glDisable(GL_POLYGON_OFFSET_FILL);
+            glDisable(GL_POLYGON_OFFSET_LINE);
         }
 
         // 1 决定使用哪个Shader
@@ -218,6 +235,16 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
                 shader->setMatrix4x4("projMatrix", camera->getProjectionMatrix());
             }
                 break;
+            case MaterialType::DepthMaterial: {
+                // MVP
+                shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
+                shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());
+                shader->setMatrix4x4("projMatrix", camera->getProjectionMatrix());
+
+                shader->setFloat("near", camera->mNear);
+                shader->setFloat("far", camera->mFar);
+            }
+                break;
             default:
                 break;
         }
@@ -232,10 +259,6 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
     // 2 遍历object的子节点，对每个子节点都需要调用renderObject
     auto children = object->getChildren();
     for (int i = 0; i < children.size(); ++i) {
-//        if (i == 1)
-//            glDepthMask(GL_FALSE);
-//        else
-//            glDepthMask(GL_TRUE);
         renderObject(children[i], camera, dirLight, ambLight);
     }
 }

@@ -20,6 +20,10 @@ public:
     glm::vec3 mPosition{0.0f, 0.0f, 8.0f};
     glm::vec3 mUp{0.0f, 1.0f, 0.0f};
     glm::vec3 mRight{1.0f, 0.0f, 0.0f};
+
+
+    float mNear = 0.0f;
+    float mFar = 0.0f;
 };
 
 
