@@ -88,74 +88,84 @@ void prepare() {
     renderer = new Renderer();
 
     scene = new Scene();
-//    auto testModel = AssimpLoader::load("assets/fbx/maga.fbx");
-//    scene->addChild(testModel);
 
-    auto geometry = Geometry::createPlane(5.0f, 5.0f);
+    // ------------ A方块的实体与便捷 ---------------
+    // 1 创建一个普通方块
+    auto geometry = Geometry::createBox(4);
     auto materialA = new PhongMaterial();
     materialA->mDiffuse = Texture::createTexture("assets/textures/goku.jpg", 0);
-    auto meshA = new Mesh(geometry, materialA);
 
+    materialA->mStencilTest = true;
+    materialA->mSFail = GL_KEEP;
+    materialA->mZFail = GL_KEEP;
+    materialA->mZPass = GL_REPLACE;
+    materialA->mStencilMask = 0xFF;
+    materialA->mStencilFunc = GL_ALWAYS;
+    materialA->mStencilRef = 1;
+    materialA->mStencilFuncMask = 0xFF;
+
+    auto meshA = new Mesh(geometry, materialA);
     scene->addChild(meshA);
 
+    // 2 创建一个勾边方块
+    auto materialABound = new WhiteMaterial();
+    materialABound->mDepthWrite = false;
+
+    materialABound->mStencilTest = true;
+    materialABound->mSFail = GL_KEEP;
+    materialABound->mZFail = GL_KEEP;
+    materialABound->mZPass = GL_KEEP;
+    materialABound->mStencilMask = 0x00;
+    materialABound->mStencilFunc = GL_NOTEQUAL;
+    materialABound->mStencilRef = 1;
+    materialABound->mStencilFuncMask = 0xFF;
+
+    auto meshABound = new Mesh(geometry, materialABound);
+    meshABound->setPosition(meshA->getPosition());
+    meshABound->setScale(glm::vec3(1.2f));
+    scene->addChild(meshABound);
+
+    // ------------ B方块的实体与便捷 ---------------
+    // 1 创建一个普通方块
+    auto geometryB = Geometry::createBox(4);
     auto materialB = new PhongMaterial();
-    materialB->mDiffuse = Texture::createTexture("assets/textures/box.png", 0);
-    materialB->mPolygonOffset = true;
-    materialB->mFactor = 1.0f;
-    materialB->mUnit = 1.0f;
-    auto meshB = new Mesh(geometry, materialB);
-    meshB->setPosition(glm::vec3(2.0f, 0.5f, -0.00001f));
+    materialB->mDiffuse = Texture::createTexture("assets/textures/wall.jpg", 0);
+
+    materialB->mStencilTest = true;
+    materialB->mSFail = GL_KEEP;
+    materialB->mZFail = GL_KEEP;
+    materialB->mZPass = GL_REPLACE;
+    materialB->mStencilMask = 0xFF;
+    materialB->mStencilFunc = GL_ALWAYS;
+    materialB->mStencilRef = 1;
+    materialB->mStencilFuncMask = 0xFF;
+
+    auto meshB = new Mesh(geometryB, materialB);
+    meshB->setPosition(glm::vec3(3.0f, 1.0f, 1.0f));
     scene->addChild(meshB);
 
-//    auto materialC = new PhongMaterial();
-//    materialC->mDiffuse = Texture::createTexture("assets/textures/wall.jpg", 0);
-//    auto meshC = new Mesh(geometry, materialC);
-//    meshC->setPosition(glm::vec3(4.0f, 1.0f, -2.0f));
-//    scene->addChild(meshC);
+    // 2 创建一个勾边方块
+    auto materialBBound = new WhiteMaterial();
+    materialBBound->mDepthTest = false;
 
+    materialBBound->mStencilTest = true;
+    materialBBound->mSFail = GL_KEEP;
+    materialBBound->mZFail = GL_KEEP;
+    materialBBound->mZPass = GL_KEEP;
+    materialBBound->mStencilMask = 0x00;
+    materialBBound->mStencilFunc = GL_NOTEQUAL;
+    materialBBound->mStencilRef = 1;
+    materialBBound->mStencilFuncMask = 0xFF;
 
+    auto meshBBound = new Mesh(geometryB, materialBBound);
+    meshBBound->setPosition(meshB->getPosition());
+    meshBBound->setScale(glm::vec3(1.2f));
+    scene->addChild(meshBBound);
 
-    spotLight = new SpotLight();
-    spotLight->setPosition(glm::vec3(2.0, 0.0, 0.0));
-    spotLight->mTargetDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
-    spotLight->mInnerAngle = 30.0f;
-    spotLight->mOuterAngle = 45.0f;
 
     dirLight = new DirectionalLight();
     dirLight->mDirection = glm::vec3(1.0f);
     dirLight->mSpecularIntensity = 0.1f;
-
-    auto pointLight1 = new PointLight();
-    pointLight1->setPosition(glm::vec3(1.0f, 0.0f, 0.0f));
-    pointLight1->mColor = glm::vec3(1.0f, 0.0f, 0.0f);
-    pointLight1->mK2 = 0.0f;
-    pointLight1->mK1 = 0.0f;
-    pointLight1->mKc = 1.0f;
-    pointLights.push_back(pointLight1);
-
-    auto pointLight2 = new PointLight();
-    pointLight2->setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
-    pointLight2->mColor = glm::vec3(0.0f, 0.0f, 1.0f);
-    pointLight2->mK2 = 0.0f;
-    pointLight2->mK1 = 0.0f;
-    pointLight2->mKc = 1.0f;
-    pointLights.push_back(pointLight2);
-
-    auto pointLight3 = new PointLight();
-    pointLight3->setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-    pointLight3->mColor = glm::vec3(0.0f, 0.0f, 1.0f);
-    pointLight3->mK2 = 0.0f;
-    pointLight3->mK1 = 0.0f;
-    pointLight3->mKc = 1.0f;
-    pointLights.push_back(pointLight3);
-
-    auto pointLight4 = new PointLight();
-    pointLight4->setPosition(glm::vec3(0.0f, 0.0f, -1.0f));
-    pointLight4->mColor = glm::vec3(0.0f, 0.0f, 1.0f);
-    pointLight4->mK2 = 0.0f;
-    pointLight4->mK1 = 0.0f;
-    pointLight4->mKc = 1.0f;
-    pointLights.push_back(pointLight4);
 
     ambLight = new AmbientLight();
     ambLight->mColor = glm::vec3(1.0f);

@@ -40,6 +40,9 @@ public:
 private:
     // 根据Material类型不同，挑选不同的shader
     Shader *pickShader(MaterialType type);
+    void setDepthState(Material* material);
+    void setPolygonOffsetState(Material* material);
+    void setStencilState(Material* material);
 
 private:
     // 生成多种不同的shader对象

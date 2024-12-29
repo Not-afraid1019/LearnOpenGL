@@ -30,6 +30,19 @@ public:
     unsigned int mPolygonOffsetType{GL_POLYGON_OFFSET_FILL};
     float mFactor{0.0f};
     float mUnit{0.0f};
+
+    // stencil相关
+    bool mStencilTest{false};
+
+    unsigned int mSFail{GL_KEEP};
+    unsigned int mZFail{GL_KEEP};
+    unsigned int mZPass{GL_KEEP};
+
+    unsigned int mStencilMask{0xFF};
+
+    unsigned int mStencilFunc{GL_ALWAYS};
+    unsigned int mStencilRef{0};
+    unsigned int mStencilFuncMask{0xFF};
 };
 
 
