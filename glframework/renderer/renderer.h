@@ -49,6 +49,7 @@ private:
     void setPolygonOffsetState(Material* material);
     void setStencilState(Material* material);
     void setBlendState(Material* material);
+    void setFaceCullingState(Material* material);
 
 private:
     // 生成多种不同的shader对象

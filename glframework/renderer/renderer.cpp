@@ -236,6 +236,7 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
         setPolygonOffsetState(material);
         setStencilState(material);
         setBlendState(material);
+        setFaceCullingState(material);
 
         // 1 决定使用哪个Shader
         Shader* shader = pickShader(material->mType);
@@ -375,6 +376,16 @@ void Renderer::setBlendState(Material *material) {
         glBlendFunc(material->mSFactor, material->mDFactor);
     } else {
         glDisable(GL_BLEND);
+    }
+}
+
+void Renderer::setFaceCullingState(Material *material) {
+    if (material->mFaceCulling) {
+        glEnable(GL_CULL_FACE);
+        glFrontFace(material->mFrontFace);
+        glCullFace(material->mCullFace);
+    } else {
+        glDisable(GL_CULL_FACE);
     }
 }
 

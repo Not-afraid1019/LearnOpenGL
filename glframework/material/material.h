@@ -51,6 +51,11 @@ public:
     unsigned int mDFactor{GL_ONE_MINUS_SRC_ALPHA};
 
     float mOpacity{1.0f};
+
+    // 面剔除
+    bool mFaceCulling{false};
+    unsigned int mFrontFace{GL_CCW};
+    unsigned int mCullFace{GL_BACK};
 };
 
 
