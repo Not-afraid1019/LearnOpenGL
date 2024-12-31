@@ -32,7 +32,7 @@ void Object::setScale(glm::vec3 scale) {
     mScale = scale;
 }
 
-glm::mat4 Object::getModelMatrix() {
+glm::mat4 Object::getModelMatrix() const {
     // unity: 缩放 旋转 平移
     glm::mat4 transform{1.0f};
 

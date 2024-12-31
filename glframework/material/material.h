@@ -9,7 +9,8 @@
 enum class MaterialType {
     PhongMaterial,
     WhiteMaterial,
-    DepthMaterial
+    DepthMaterial,
+    OpacityMaskMaterial
 };
 
 class Material {
@@ -43,6 +44,13 @@ public:
     unsigned int mStencilFunc{GL_ALWAYS};
     unsigned int mStencilRef{0};
     unsigned int mStencilFuncMask{0xFF};
+
+    // 颜色混合相关
+    bool mBlend{false};
+    unsigned int mSFactor{GL_SRC_ALPHA};
+    unsigned int mDFactor{GL_ONE_MINUS_SRC_ALPHA};
+
+    float mOpacity{1.0f};
 };
 
 

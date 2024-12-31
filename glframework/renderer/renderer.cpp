@@ -4,13 +4,16 @@
 #include "renderer.h"
 #include "../material/phongMaterial.h"
 #include "../material/whiteMaterial.h"
+#include "../material/opacityMaskMaterial.h"
 #include "../../wrapper/checkError.h"
 #include <iostream>
+#include <algorithm>
 
 Renderer::Renderer() {
     mPhongShader = new Shader("assets/shaders/phong.vert", "assets/shaders/phong.frag");
     mWhiteShader = new Shader("assets/shaders/white.vert", "assets/shaders/white.frag");
     mDepthShader = new Shader("assets/shaders/depth.vert", "assets/shaders/depth.frag");
+    mOpacityMaskShader = new Shader("assets/shaders/phongOpacityMask.vert", "assets/shaders/phongOpacityMask.frag");
 }
 
 Renderer::~Renderer() {
@@ -124,6 +127,22 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight* di
     }
 }
 
+void Renderer::projectObject(Object *obj) {
+    if (obj->getType() == ObjectType::Mesh) {
+        Mesh* mesh = (Mesh*)obj;
+        auto material = mesh->mMaterial;
+        if (material->mBlend) {
+            mTransparentObjects.push_back(mesh);
+        } else {
+            mOpacityObjects.push_back(mesh);
+        }
+    }
+
+    auto children = obj->getChildren();
+    for (int i = 0; i < children.size(); ++i) {
+        projectObject(children[i]);
+    }
+}
 
 Shader *Renderer::pickShader(MaterialType type) {
     Shader* result = nullptr;
@@ -137,6 +156,9 @@ Shader *Renderer::pickShader(MaterialType type) {
             break;
         case MaterialType::DepthMaterial:
             result = mDepthShader;
+            break;
+        case MaterialType::OpacityMaskMaterial:
+            result = mOpacityMaskShader;
             break;
         default:
             std::cout << "unknown material type" << std::endl;
@@ -161,12 +183,38 @@ void Renderer::render(Scene* scene, Camera *camera, DirectionalLight *dirLight,
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     glStencilMask(0xFF); // 保证了模板缓冲可以被清理
 
+    // 打开颜色混合
+    glDisable(GL_BLEND);
 
     // 2 清理画布
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+    mOpacityObjects.clear();
+    mTransparentObjects.clear();
 
-    // 3 将scene当做根节点开始递归渲染
-    renderObject(scene, camera, dirLight, ambLight);
+    projectObject(scene);
+
+    std::sort(mTransparentObjects.begin(), mTransparentObjects.end(), [camera](const Mesh* a, const Mesh* b) {
+        auto viewMatrix = camera->getViewMatrix();
+
+        auto modelMatrixA = a->getModelMatrix();
+        auto worldPositionA = modelMatrixA * glm::vec4(0.0, 0.0, 0.0, 1.0);
+        auto cameraPositionA = viewMatrix * worldPositionA;
+
+        auto modelMatrixB = b->getModelMatrix();
+        auto worldPositionB = modelMatrixB * glm::vec4(0.0, 0.0, 0.0, 1.0);
+        auto cameraPositionB = viewMatrix * worldPositionB;
+
+        return cameraPositionA.z < cameraPositionB.z;
+    });
+
+    // 3 渲染两个队列
+    for (int i = 0; i < mOpacityObjects.size(); ++i) {
+        renderObject(mOpacityObjects[i], camera, dirLight, ambLight);
+    }
+
+    for (int i = 0; i < mTransparentObjects.size(); ++i) {
+        renderObject(mTransparentObjects[i], camera, dirLight, ambLight);
+    }
 }
 
 void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *dirLight, AmbientLight *ambLight) {
@@ -174,12 +222,20 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
     if (object->getType() == ObjectType::Mesh) {
         auto mesh = (Mesh*)object;
         auto geometry = mesh->mGeometry;
-        auto material  = mesh->mMaterial;
+        Material* material = nullptr;
+
+        // 考察是否拥有全局材质
+        if (mGlobalMaterial != nullptr) {
+            material = mGlobalMaterial;
+        } else {
+            material  = mesh->mMaterial;
+        }
 
         // 设置渲染状态
         setDepthState(material);
         setPolygonOffsetState(material);
         setStencilState(material);
+        setBlendState(material);
 
         // 1 决定使用哪个Shader
         Shader* shader = pickShader(material->mType);
@@ -198,7 +254,7 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
                 shader->setInt("sampler", 0);
                 // 将纹理采样器与纹理单元进行挂钩
                 phongMat->mDiffuse->bind();
-//                shader->setInt("specularMaskSampler", 1);
+                shader->setInt("specularMaskSampler", 1);
 //                phongMat->mSpecularMask->bind();
                 // MVP
                 shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
@@ -214,6 +270,9 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
 
                 shader->setVector3("ambientColor", ambLight->mColor);
                 shader->setVector3("cameraPosition", camera->mPosition);
+
+                // 透明度
+                shader->setFloat("opacity", material->mOpacity);
             }
                 break;
             case MaterialType::WhiteMaterial: {
@@ -233,6 +292,34 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
                 shader->setFloat("far", camera->mFar);
             }
                 break;
+            case MaterialType::OpacityMaskMaterial: {
+                auto* opacityMat = (OpacityMaskMaterial*)material;
+                // diffuse贴图
+                shader->setInt("sampler", 0);
+                // 将纹理采样器与纹理单元进行挂钩
+                opacityMat->mDiffuse->bind();
+                // opacityMask的帧更新
+                shader->setInt("opacityMaskSampler", 1);
+                opacityMat->mOpacityMask->bind();
+                // MVP
+                shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
+                shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());
+                shader->setMatrix4x4("projMatrix", camera->getProjectionMatrix());
+                auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(mesh->getModelMatrix())));
+                shader->setMatrix3x3("normalMatrix", normalMatrix);
+                // 光源参数
+                shader->setVector3("directionalLight.color", dirLight->mColor);
+                shader->setVector3("directionalLight.direction", dirLight->mDirection);
+                shader->setFloat("directionalLight.specularIntensity", dirLight->mSpecularIntensity);
+                shader->setFloat("shiness", opacityMat->mShiness);
+
+                shader->setVector3("ambientColor", ambLight->mColor);
+                shader->setVector3("cameraPosition", camera->mPosition);
+
+                // 透明度
+                shader->setFloat("opacity", material->mOpacity);
+            }
+                break;
             default:
                 break;
         }
@@ -242,12 +329,6 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
 
         // 4 执行绘制命令
         glDrawElements(GL_TRIANGLES, geometry->getIndicesCount(), GL_UNSIGNED_INT, 0);
-    }
-
-    // 2 遍历object的子节点，对每个子节点都需要调用renderObject
-    auto children = object->getChildren();
-    for (int i = 0; i < children.size(); ++i) {
-        renderObject(children[i], camera, dirLight, ambLight);
     }
 }
 
@@ -285,6 +366,15 @@ void Renderer::setStencilState(Material *material) {
         glStencilFunc(material->mStencilFunc, material->mStencilRef, material->mStencilFuncMask);
     } else {
         glDisable(GL_STENCIL_TEST);
+    }
+}
+
+void Renderer::setBlendState(Material *material) {
+    if (material->mBlend) {
+        glEnable(GL_BLEND);
+        glBlendFunc(material->mSFactor, material->mDFactor);
+    } else {
+        glDisable(GL_BLEND);
     }
 }
 

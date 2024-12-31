@@ -37,12 +37,18 @@ public:
 
     void setClearColor(glm::vec3 color);
 
+public:
+    Material* mGlobalMaterial{nullptr};
+
 private:
+    void projectObject(Object* obj);
+
     // 根据Material类型不同，挑选不同的shader
     Shader *pickShader(MaterialType type);
     void setDepthState(Material* material);
     void setPolygonOffsetState(Material* material);
     void setStencilState(Material* material);
+    void setBlendState(Material* material);
 
 private:
     // 生成多种不同的shader对象
@@ -50,6 +56,12 @@ private:
     Shader *mPhongShader{nullptr};
     Shader *mWhiteShader{nullptr};
     Shader *mDepthShader{nullptr};
+    Shader *mOpacityMaskShader{nullptr};
+
+    // 不透明物体与透明物体的队列
+    // 每一帧绘制前都需要清空两个队列
+    std::vector<Mesh*> mOpacityObjects{};
+    std::vector<Mesh*> mTransparentObjects{};
 };
 
 

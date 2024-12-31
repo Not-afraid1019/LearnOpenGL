@@ -33,7 +33,7 @@ public:
 
     void setScale(glm::vec3 scale);
 
-    glm::mat4 getModelMatrix();
+    glm::mat4 getModelMatrix() const;
 
     // 父子关系
     void addChild(Object* obj);
