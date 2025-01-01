@@ -15,6 +15,8 @@
 #include "glframework/material/phongMaterial.h"
 #include "glframework/material/whiteMaterial.h"
 #include "glframework/material/depthMaterial.h"
+#include "glframework/material/opacityMaskMaterial.h"
+#include "glframework/material/screenMaterial.h"
 
 #include "glframework/mesh.h"
 #include "glframework/renderer/renderer.h"
@@ -26,14 +28,20 @@
 #include "imgui/imgui_impl_opengl3.h"
 
 #include "glframework/scene.h"
+#include "glframework/framebuffer/framebuffer.h"
 
 #include "application/assimpLoader.h"
 
 using namespace std;
 
 Renderer* renderer = nullptr;
-Scene* scene = nullptr;
+Scene* sceneOffscreen = nullptr;
+Scene* sceneInScreen = nullptr;
 
+Framebuffer* framebuffer = nullptr;
+
+int WIDTH = 800;
+int HEIGHT = 600;
 // 灯光们
 DirectionalLight* dirLight = nullptr;
 SpotLight* spotLight = nullptr;
@@ -48,7 +56,6 @@ glm::vec3 clearColor{};
 
 void OnResize(int width, int height) {
     GL_CALL(glViewport(0, 0, width, height));
-    std::cout << "OnResize" << std::endl;
 }
 
 void OnKey(int key, int action, int mods) {
@@ -69,6 +76,21 @@ void OnScroll(double offset) {
     cameraControl->OnScroll(offset);
 }
 
+void setModelBlend(Object* obj, bool blend, float opacity) {
+    if (obj->getType() == ObjectType::Mesh) {
+        Mesh* mesh = (Mesh*)obj;
+        Material* mat = mesh->mMaterial;
+        mat->mBlend = blend;
+        mat->mOpacity = opacity;
+        mat->mDepthWrite = false;
+    }
+
+    auto children = obj->getChildren();
+    for (int i = 0; i < children.size(); ++i) {
+        setModelBlend(children[i], blend, opacity);
+    }
+}
+
 void prepareCamera() {
     float size = 6.0f;
     camera = new PerspectiveCamera(90.0f,
@@ -86,82 +108,24 @@ void prepareCamera() {
 
 void prepare() {
     renderer = new Renderer();
+    sceneInScreen = new Scene();
+    sceneOffscreen = new Scene();
 
-    scene = new Scene();
+    framebuffer = new Framebuffer(WIDTH, HEIGHT);
 
-    // ------------ A方块的实体与便捷 ---------------
-    // 1 创建一个普通方块
-    auto geometry = Geometry::createBox(4);
-    auto materialA = new PhongMaterial();
-    materialA->mDiffuse = Texture::createTexture("assets/textures/goku.jpg", 0);
+    // 离屏渲染的box
+    auto boxGeo = Geometry::createBox(5.0);
+    auto boxMat = new PhongMaterial();
+    boxMat->mDiffuse = new Texture("assets/textures/goku.png", 0);
+    auto boxMesh = new Mesh(boxGeo, boxMat);
+    sceneOffscreen->addChild(boxMesh);
 
-    materialA->mStencilTest = true;
-    materialA->mSFail = GL_KEEP;
-    materialA->mZFail = GL_KEEP;
-    materialA->mZPass = GL_REPLACE;
-    materialA->mStencilMask = 0xFF;
-    materialA->mStencilFunc = GL_ALWAYS;
-    materialA->mStencilRef = 1;
-    materialA->mStencilFuncMask = 0xFF;
-
-    auto meshA = new Mesh(geometry, materialA);
-    scene->addChild(meshA);
-
-    // 2 创建一个勾边方块
-    auto materialABound = new WhiteMaterial();
-    materialABound->mDepthWrite = false;
-
-    materialABound->mStencilTest = true;
-    materialABound->mSFail = GL_KEEP;
-    materialABound->mZFail = GL_KEEP;
-    materialABound->mZPass = GL_KEEP;
-    materialABound->mStencilMask = 0x00;
-    materialABound->mStencilFunc = GL_NOTEQUAL;
-    materialABound->mStencilRef = 1;
-    materialABound->mStencilFuncMask = 0xFF;
-
-    auto meshABound = new Mesh(geometry, materialABound);
-    meshABound->setPosition(meshA->getPosition());
-    meshABound->setScale(glm::vec3(1.2f));
-    scene->addChild(meshABound);
-
-    // ------------ B方块的实体与便捷 ---------------
-    // 1 创建一个普通方块
-    auto geometryB = Geometry::createBox(4);
-    auto materialB = new PhongMaterial();
-    materialB->mDiffuse = Texture::createTexture("assets/textures/wall.jpg", 0);
-
-    materialB->mStencilTest = true;
-    materialB->mSFail = GL_KEEP;
-    materialB->mZFail = GL_KEEP;
-    materialB->mZPass = GL_REPLACE;
-    materialB->mStencilMask = 0xFF;
-    materialB->mStencilFunc = GL_ALWAYS;
-    materialB->mStencilRef = 1;
-    materialB->mStencilFuncMask = 0xFF;
-
-    auto meshB = new Mesh(geometryB, materialB);
-    meshB->setPosition(glm::vec3(3.0f, 1.0f, 1.0f));
-    scene->addChild(meshB);
-
-    // 2 创建一个勾边方块
-    auto materialBBound = new WhiteMaterial();
-    materialBBound->mDepthTest = false;
-
-    materialBBound->mStencilTest = true;
-    materialBBound->mSFail = GL_KEEP;
-    materialBBound->mZFail = GL_KEEP;
-    materialBBound->mZPass = GL_KEEP;
-    materialBBound->mStencilMask = 0x00;
-    materialBBound->mStencilFunc = GL_NOTEQUAL;
-    materialBBound->mStencilRef = 1;
-    materialBBound->mStencilFuncMask = 0xFF;
-
-    auto meshBBound = new Mesh(geometryB, materialBBound);
-    meshBBound->setPosition(meshB->getPosition());
-    meshBBound->setScale(glm::vec3(1.2f));
-    scene->addChild(meshBBound);
-
+    // 贴到屏幕上的矩形
+    auto geo = Geometry::createScreenPlane();
+    auto mat = new ScreenMaterial();
+    mat->mScreenTexture = framebuffer->mColorAttachment;  // !!!!!重要!!!!!
+    auto mesh = new Mesh(geo, mat);
+    sceneInScreen->addChild(mesh);
 
     dirLight = new DirectionalLight();
     dirLight->mDirection = glm::vec3(1.0f);
@@ -206,7 +170,7 @@ void renderIMGUI() {
 
 int main() {
 
-    if (!glApp->init(800, 600)) {
+    if (!glApp->init(WIDTH, HEIGHT)) {
         return -1;
     }
 
@@ -227,7 +191,10 @@ int main() {
     while (glApp->update()) {
         cameraControl->update();
         renderer->setClearColor(clearColor);
-        renderer->render(scene, camera, dirLight, ambLight);
+        // pass 01 将box渲染到colorAttachment上，新的fbo上
+        renderer->render(sceneOffscreen, camera, dirLight, ambLight, framebuffer->mFBO);
+        // pass 02 将colorAttachment作为纹理渲染到整个屏幕上
+        renderer->render(sceneInScreen, camera, dirLight, ambLight);
         renderIMGUI();
     }
     // 退出程序前做相关清理

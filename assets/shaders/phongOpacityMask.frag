@@ -6,7 +6,7 @@ in vec3 normal;
 in vec3 worldPosition;
 
 uniform sampler2D sampler;    // diffuse贴图采样器
-uniform sampler2D specularMaskSampler; // specularMask贴图
+uniform sampler2D opacityMaskSampler;
 
 uniform vec3 ambientColor;
 
@@ -15,6 +15,8 @@ uniform vec3 cameraPosition;
 
 
 uniform float shiness;
+
+uniform float opacity;
 
 struct DirectionalLight {
    vec3 direction;
@@ -64,10 +66,11 @@ vec3 calculateSpecular(vec3 lightColor, vec3 lightDir, vec3 normal, vec3 viewDir
    // 3 控制光斑大小
    specular = pow(specular, shiness);
 
-   float specularMask = texture(specularMaskSampler, uv).r;
+//   float specularMask = texture(specularMaskSampler, uv).r;
 
    // 4 计算最终颜色
-   vec3 specularColor = lightColor * specular * flag * intensity * specularMask;
+//   vec3 specularColor = lightColor * specular * flag * intensity * specularMask;
+   vec3 specularColor = lightColor * specular * flag * intensity;
 
    return specularColor;
 }
@@ -129,27 +132,13 @@ void main()
    // 计算光照的通用数据
    vec3 objectColor = texture(sampler, uv).xyz;
    vec3 normalN = normalize(normal);
-   //   vec3 lightDirN = normalize(worldPosition - spotLight.position);
    vec3 viewDir = normalize(worldPosition - cameraPosition);
-   //   vec3 targetDirN = normalize(spotLight.targetDirection);
-
-   //   result += calculateSpotLight(spotLight, normalN, viewDir);
    result += calculateDirectionalLight(directionalLight, normalN, viewDir);
-
-   //   for(int i = 0; i < POINT_LIGHT_NUM; i++) {
-   //      result += calculatePointLight(pointLights[i], normalN, viewDir);
-   //   }
 
    // 环境光计算
    vec3 ambientColor = objectColor * ambientColor;
-
+   float alpha = texture(opacityMaskSampler, uv).r;
    vec3 finalColor = result + ambientColor;
 
-   //   float flag = step(800, gl_FragCoord.x);
-   //   vec3 blendColor = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), flag);
-   //   finalColor *= blendColor;
-   //   finalColor = vec3(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z);
-
-
-   FragColor = vec4(finalColor, 1.0);
+   FragColor = vec4(finalColor, alpha * opacity);
 }
