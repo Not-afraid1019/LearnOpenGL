@@ -10,7 +10,8 @@ enum class MaterialType {
     PhongMaterial,
     WhiteMaterial,
     DepthMaterial,
-    OpacityMaskMaterial
+    OpacityMaskMaterial,
+    ScreenMaterial
 };
 
 class Material {
