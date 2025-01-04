@@ -17,6 +17,8 @@
 #include "glframework/material/depthMaterial.h"
 #include "glframework/material/opacityMaskMaterial.h"
 #include "glframework/material/screenMaterial.h"
+#include "glframework/material/cubeMaterial.h"
+#include "glframework/material/phongEnvMaterial.h"
 
 #include "glframework/mesh.h"
 #include "glframework/renderer/renderer.h"
@@ -35,8 +37,7 @@
 using namespace std;
 
 Renderer* renderer = nullptr;
-Scene* sceneOffscreen = nullptr;
-Scene* sceneInScreen = nullptr;
+Scene* scene = nullptr;
 
 Framebuffer* framebuffer = nullptr;
 
@@ -108,24 +109,34 @@ void prepareCamera() {
 
 void prepare() {
     renderer = new Renderer();
-    sceneInScreen = new Scene();
-    sceneOffscreen = new Scene();
+    scene = new Scene();
 
-    framebuffer = new Framebuffer(WIDTH, HEIGHT);
+    std::vector<std::string> paths = {
+            "assets/textures/skybox/right.jpg",
+            "assets/textures/skybox/left.jpg",
+            "assets/textures/skybox/top.jpg",
+            "assets/textures/skybox/bottom.jpg",
+            "assets/textures/skybox/front.jpg",
+            "assets/textures/skybox/back.jpg",
+    };
 
-    // 离屏渲染的box
-    auto boxGeo = Geometry::createBox(5.0);
-    auto boxMat = new PhongMaterial();
-    boxMat->mDiffuse = new Texture("assets/textures/goku.png", 0);
+    Texture* envTexBox = new Texture(paths, 0);
+
+    auto boxGeo = Geometry::createBox(1.0);
+    auto boxMat = new CubeMaterial();
+    boxMat->mDiffuse = envTexBox;
+    boxMat->mDepthWrite = false;
     auto boxMesh = new Mesh(boxGeo, boxMat);
-    sceneOffscreen->addChild(boxMesh);
+    scene->addChild(boxMesh);
 
-    // 贴到屏幕上的矩形
-    auto geo = Geometry::createScreenPlane();
-    auto mat = new ScreenMaterial();
-    mat->mScreenTexture = framebuffer->mColorAttachment;  // !!!!!重要!!!!!
-    auto mesh = new Mesh(geo, mat);
-    sceneInScreen->addChild(mesh);
+    Texture* envTex = new Texture(paths, 1);
+    auto sphereGeo = Geometry::createSphere(4.0f);
+    auto sphereMat = new PhongEnvMaterial();
+    sphereMat->mDiffuse = new Texture("assets/textures/earth.png", 0);
+    sphereMat->mEnv = envTex;
+    auto sphereMesh = new Mesh(sphereGeo, sphereMat);
+    scene->addChild(sphereMesh);
+
 
     dirLight = new DirectionalLight();
     dirLight->mDirection = glm::vec3(1.0f);
@@ -192,9 +203,9 @@ int main() {
         cameraControl->update();
         renderer->setClearColor(clearColor);
         // pass 01 将box渲染到colorAttachment上，新的fbo上
-        renderer->render(sceneOffscreen, camera, dirLight, ambLight, framebuffer->mFBO);
+//        renderer->render(sceneOffscreen, camera, dirLight, ambLight, framebuffer->mFBO);
         // pass 02 将colorAttachment作为纹理渲染到整个屏幕上
-        renderer->render(sceneInScreen, camera, dirLight, ambLight);
+        renderer->render(scene, camera, dirLight, ambLight);
         renderIMGUI();
     }
     // 退出程序前做相关清理

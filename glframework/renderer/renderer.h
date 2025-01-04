@@ -59,6 +59,8 @@ private:
     Shader *mDepthShader{nullptr};
     Shader *mOpacityMaskShader{nullptr};
     Shader *mScreenShader{nullptr};
+    Shader *mCubeShader{nullptr};
+    Shader *mPhongEnvShader{nullptr};
 
     // 不透明物体与透明物体的队列
     // 每一帧绘制前都需要清空两个队列

@@ -7,6 +7,8 @@
 #include "../material/depthMaterial.h"
 #include "../material/opacityMaskMaterial.h"
 #include "../material/screenMaterial.h"
+#include "../material/cubeMaterial.h"
+#include "../material/phongEnvMaterial.h"
 #include "../../wrapper/checkError.h"
 #include <iostream>
 #include <algorithm>
@@ -17,6 +19,8 @@ Renderer::Renderer() {
     mDepthShader = new Shader("assets/shaders/depth.vert", "assets/shaders/depth.frag");
     mOpacityMaskShader = new Shader("assets/shaders/phongOpacityMask.vert", "assets/shaders/phongOpacityMask.frag");
     mScreenShader = new Shader("assets/shaders/screen.vert", "assets/shaders/screen.frag");
+    mCubeShader = new Shader("assets/shaders/cube.vert", "assets/shaders/cube.frag");
+    mPhongEnvShader = new Shader("assets/shaders/phongEnv.vert", "assets/shaders/phongEnv.frag");
 }
 
 Renderer::~Renderer() {
@@ -166,6 +170,12 @@ Shader *Renderer::pickShader(MaterialType type) {
         case MaterialType::ScreenMaterial:
             result = mScreenShader;
             break;
+        case MaterialType::CubeMaterial:
+            result = mCubeShader;
+            break;
+        case MaterialType::PhongEnvMaterial:
+            result = mPhongEnvShader;
+            break;
         default:
             std::cout << "unknown material type" << std::endl;
             break;
@@ -258,13 +268,13 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
 
         switch (material->mType) {
             case MaterialType::PhongMaterial: {
-                auto* phongMat = (PhongMaterial*)material;
-                // diffuse贴图
+                auto* phongMat = (PhongEnvMaterial*)material;
                 shader->setInt("sampler", 0);
-                // 将纹理采样器与纹理单元进行挂钩
                 phongMat->mDiffuse->bind();
-                shader->setInt("specularMaskSampler", 1);
-//                phongMat->mSpecularMask->bind();
+
+                shader->setInt("envSampler", 1);
+                phongMat->mEnv->bind();
+
                 // MVP
                 shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
                 shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());
@@ -335,6 +345,45 @@ void Renderer::renderObject(Object *object, Camera *camera, DirectionalLight *di
                 shader->setFloat("texWidth", 800);
                 shader->setFloat("texHeight", 600);
                 screenMat->mScreenTexture->bind();
+            }
+                break;
+            case MaterialType::CubeMaterial: {
+                auto cubeMat = (CubeMaterial*)material;
+                mesh->setPosition(camera->mPosition);
+                // MVP
+                shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
+                shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());
+                shader->setMatrix4x4("projMatrix", camera->getProjectionMatrix());
+
+                shader->setInt("cubeSampler", 0);
+                cubeMat->mDiffuse->bind();
+            }
+                break;
+            case MaterialType::PhongEnvMaterial: {
+                auto* phongMat = (PhongMaterial*)material;
+                // diffuse贴图
+                shader->setInt("sampler", 0);
+                // 将纹理采样器与纹理单元进行挂钩
+                phongMat->mDiffuse->bind();
+                shader->setInt("specularMaskSampler", 1);
+//                phongMat->mSpecularMask->bind();
+                // MVP
+                shader->setMatrix4x4("modelMatrix", mesh->getModelMatrix());
+                shader->setMatrix4x4("viewMatrix", camera->getViewMatrix());
+                shader->setMatrix4x4("projMatrix", camera->getProjectionMatrix());
+                auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(mesh->getModelMatrix())));
+                shader->setMatrix3x3("normalMatrix", normalMatrix);
+                // 光源参数
+                shader->setVector3("directionalLight.color", dirLight->mColor);
+                shader->setVector3("directionalLight.direction", dirLight->mDirection);
+                shader->setFloat("directionalLight.specularIntensity", dirLight->mSpecularIntensity);
+                shader->setFloat("shiness", phongMat->mShiness);
+
+                shader->setVector3("ambientColor", ambLight->mColor);
+                shader->setVector3("cameraPosition", camera->mPosition);
+
+                // 透明度
+                shader->setFloat("opacity", material->mOpacity);
             }
                 break;
             default:

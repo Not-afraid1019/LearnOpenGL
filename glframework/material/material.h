@@ -11,7 +11,9 @@ enum class MaterialType {
     WhiteMaterial,
     DepthMaterial,
     OpacityMaskMaterial,
-    ScreenMaterial
+    ScreenMaterial,
+    CubeMaterial,
+    PhongEnvMaterial
 };
 
 class Material {
@@ -24,7 +26,7 @@ public:
 
     // 深度检测相关
     bool mDepthTest{true};
-    GLenum mDepthFunc{GL_LESS};
+    GLenum mDepthFunc{GL_LEQUAL};
     bool mDepthWrite{true};
 
     // polygonOffset相关

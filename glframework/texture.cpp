@@ -157,6 +157,40 @@ Texture::Texture(unsigned int width, unsigned int height, unsigned int unit) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
+// 右左上下后前
+Texture::Texture(const std::vector<std::string> &paths, unsigned int unit) {
+    mUnit = unit;
+    mTextureTarget = GL_TEXTURE_CUBE_MAP;
+
+    stbi_set_flip_vertically_on_load(false);
+
+    // 1 创建CubeMap对象
+    glGenTextures(1, &mTexture);
+    glActiveTexture(GL_TEXTURE0 + mUnit);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, mTexture);
+
+    // 2 循环读取六张贴图，并且放置到cubeMap的六个GPU空间内
+    int channels;
+    int width = 0, height = 0;
+    unsigned char* data = nullptr;
+    for (int i = 0; i < paths.size(); ++i) {
+        data = stbi_load(paths[i].c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        if (data != nullptr) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        } else {
+            std::cout << "Error:CubeMap Texture failed to load at path -" << paths[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+
+    // 3.设置纹理过滤方式
+    glTexParameteri(mTextureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(mTextureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(mTextureTarget, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(mTextureTarget, GL_TEXTURE_WRAP_T, GL_REPEAT);
+}
+
 Texture::~Texture() {
     if (mTexture != 0) {
         glDeleteTextures(1, &mTexture);
@@ -166,5 +200,5 @@ Texture::~Texture() {
 void Texture::bind() {
     //先切换纹理单元，然后绑定texture对象
     glActiveTexture(GL_TEXTURE0 + mUnit);
-    glBindTexture(GL_TEXTURE_2D, mTexture);
+    glBindTexture(mTextureTarget, mTexture);
 }
