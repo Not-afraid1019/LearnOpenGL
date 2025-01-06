@@ -11,7 +11,7 @@
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
 
-#include "../glframework/mesh.h"
+#include "../glframework/mesh/mesh.h"
 #include "../glframework/texture.h"
 
 class AssimpLoader {

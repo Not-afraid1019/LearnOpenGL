@@ -6,7 +6,7 @@
 
 #include "../core.h"
 #include <vector>
-#include "../mesh.h"
+#include "../mesh/mesh.h"
 #include "../../application/camera/camera.h"
 #include "../light/directionalLight.h"
 #include "../light/pointLight.h"
@@ -22,18 +22,10 @@ public:
     ~Renderer();
 
     // 渲染功能函数，每次调用都会渲染一帧
-    void render(Scene* scene, Camera *camera, DirectionalLight *dirLight, const std::vector<PointLight*>& pointLights, SpotLight *spotLight, AmbientLight *ambLight);
-
-//    void render(const std::vector<Mesh*>& meshes,
-//                Camera* camera,
-//                PointLight* pointLight,
-//                AmbientLight* ambLight);
-
     void render(Scene* scene, Camera* camera, DirectionalLight* dirLight, AmbientLight* ambLight, unsigned int fbo=0);
 
     // 针对单个object进行渲染
     void renderObject(Object* object, Camera* camera, DirectionalLight* dirLight, AmbientLight* ambLight);
-    void renderObject(Object *object, Camera *camera, DirectionalLight* dirLight, const std::vector<PointLight*>& pointLights, SpotLight *spotLight, AmbientLight *ambLight);
 
     void setClearColor(glm::vec3 color);
 
@@ -61,6 +53,8 @@ private:
     Shader *mScreenShader{nullptr};
     Shader *mCubeShader{nullptr};
     Shader *mPhongEnvShader{nullptr};
+    Shader *mPhongInstanceShader{nullptr};
+    Shader *mGrassInstanceShader{nullptr};
 
     // 不透明物体与透明物体的队列
     // 每一帧绘制前都需要清空两个队列

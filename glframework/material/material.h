@@ -13,7 +13,9 @@ enum class MaterialType {
     OpacityMaskMaterial,
     ScreenMaterial,
     CubeMaterial,
-    PhongEnvMaterial
+    PhongEnvMaterial,
+    PhongInstanceMaterial,
+    GrassInstanceMaterial
 };
 
 class Material {

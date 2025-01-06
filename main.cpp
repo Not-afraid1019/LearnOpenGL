@@ -19,8 +19,11 @@
 #include "glframework/material/screenMaterial.h"
 #include "glframework/material/cubeMaterial.h"
 #include "glframework/material/phongEnvMaterial.h"
+#include "glframework/material/phontInstanceMaterial.h"
+#include "glframework/material/grassInstanceMaterial.h"
 
-#include "glframework/mesh.h"
+#include "glframework/mesh/mesh.h"
+#include "glframework/mesh/instanceMesh.h"
 #include "glframework/renderer/renderer.h"
 #include "glframework/light/pointLight.h"
 #include "glframework/light/spotLight.h"
@@ -33,6 +36,7 @@
 #include "glframework/framebuffer/framebuffer.h"
 
 #include "application/assimpLoader.h"
+#include "application/assimpInstanceLoader.h"
 
 using namespace std;
 
@@ -43,6 +47,9 @@ Framebuffer* framebuffer = nullptr;
 
 int WIDTH = 800;
 int HEIGHT = 600;
+
+GrassInstanceMaterial* grassMaterial = nullptr;
+
 // 灯光们
 DirectionalLight* dirLight = nullptr;
 SpotLight* spotLight = nullptr;
@@ -100,43 +107,94 @@ void prepareCamera() {
                                    1000.0f);
 
     auto control = new GameCameraControl();
-    control->setSpeed(0.005f);
+    control->setSpeed(0.02f);
 //    control->setSpeed(1.0f);
     cameraControl = control;
     cameraControl->setCamera(camera);
     cameraControl->setSensitivity(0.4f);
 }
 
+void setInstanceMatrix(Object* obj, int index, glm::mat4 matrix) {
+    if (obj->getType() == ObjectType::InstanceMesh) {
+        auto* im = (InstanceMesh*)obj;
+        im->mInstanceMatrices[index] = matrix;
+    }
+
+    auto children = obj->getChildren();
+    for (int i = 0; i < children.size(); ++i) {
+        setInstanceMatrix(children[i], index, matrix);
+    }
+}
+
+void updateInstanceMatrix(Object* obj) {
+    if (obj->getType() == ObjectType::InstanceMesh) {
+        auto* im = (InstanceMesh*)obj;
+        im->updateMatrices();
+    }
+
+    auto children = obj->getChildren();
+    for (int i = 0; i < children.size(); ++i) {
+        updateInstanceMatrix(children[i]);
+    }
+}
+
+void setInstanceMaterial(Object* obj, Material* material) {
+    if (obj->getType() == ObjectType::InstanceMesh) {
+        auto* im = (InstanceMesh*)obj;
+        im->mMaterial = material;
+    }
+
+    auto children = obj->getChildren();
+    for (int i = 0; i < children.size(); ++i) {
+        setInstanceMaterial(children[i], material);
+    }
+}
+
 void prepare() {
     renderer = new Renderer();
     scene = new Scene();
 
-    std::vector<std::string> paths = {
-            "assets/textures/skybox/right.jpg",
-            "assets/textures/skybox/left.jpg",
-            "assets/textures/skybox/top.jpg",
-            "assets/textures/skybox/bottom.jpg",
-            "assets/textures/skybox/front.jpg",
-            "assets/textures/skybox/back.jpg",
-    };
-
-    Texture* envTexBox = new Texture(paths, 0);
-
     auto boxGeo = Geometry::createBox(1.0);
     auto boxMat = new CubeMaterial();
-    boxMat->mDiffuse = envTexBox;
-    boxMat->mDepthWrite = false;
+    boxMat->mDiffuse = new Texture("assets/textures/bk.png", 0);
     auto boxMesh = new Mesh(boxGeo, boxMat);
     scene->addChild(boxMesh);
 
-    Texture* envTex = new Texture(paths, 1);
     auto sphereGeo = Geometry::createSphere(4.0f);
-    auto sphereMat = new PhongEnvMaterial();
+    auto sphereMat = new PhongInstanceMaterial();
     sphereMat->mDiffuse = new Texture("assets/textures/earth.png", 0);
-    sphereMat->mEnv = envTex;
-    auto sphereMesh = new Mesh(sphereGeo, sphereMat);
-    scene->addChild(sphereMesh);
 
+    int rNum = 20;
+    int cNum = 20;
+
+//    auto grassModel = AssimpInstanceLoader::load("assets/fbx/grass.obj", rNum * cNum);
+    auto grassModel = AssimpInstanceLoader::load("assets/fbx/grass.obj", rNum * cNum);
+
+    glm::mat4 translate;
+    glm::mat4 rotate;
+    glm::mat4 transform;
+
+    srand(glfwGetTime());
+    float radio = 0.5;
+    for (int r = 0; r < rNum; ++r) {
+        for (int c = 0; c < cNum; ++c) {
+            translate = glm::translate(glm::mat4(1.0f), glm::vec3(radio*r, 0.0f, radio*c));
+            rotate = glm::rotate(glm::radians((float)(rand() % 90)), glm::vec3(0.0, 1.0, 0.0));
+            transform = translate * rotate;
+            setInstanceMatrix(grassModel, r * cNum + c, transform);
+        }
+    }
+    updateInstanceMatrix(grassModel);
+
+    grassMaterial = new GrassInstanceMaterial();
+    grassMaterial->mDiffuse = new Texture("assets/textures/grass.png", 0);
+    grassMaterial->mOpacityMask = new Texture("assets/textures/grassMask.png", 1);
+    grassMaterial->mCloudMask = new Texture("assets/textures/cloud.png", 2);
+    grassMaterial->mBlend = true;
+    grassMaterial->mDepthWrite = false;
+    setInstanceMaterial(grassModel, grassMaterial);
+
+    scene->addChild(grassModel);
 
     dirLight = new DirectionalLight();
     dirLight->mDirection = glm::vec3(1.0f);
@@ -162,10 +220,22 @@ void renderIMGUI() {
     ImGui::NewFrame();
 
     // 2 决定当前的GUI上面有哪些控件，从上到下
-    ImGui::Begin("Hello World!");
-    ImGui::Text("ChangeColor Demo");
-    ImGui::Button("Test Button", ImVec2(40, 20));
-    ImGui::ColorEdit3("Clear Color", (float*)&clearColor);
+    ImGui::Begin("GrassMaterialEditor");
+    ImGui::Text("GrassColor");
+    ImGui::SliderFloat("UVScale", &grassMaterial->mUVScale, 0.0f, 100.0f);
+    ImGui::InputFloat("Brightness", &grassMaterial->mBrightness);
+    ImGui::Text("Wind");
+    ImGui::InputFloat("WindScale", &grassMaterial->mWindScale);
+    ImGui::InputFloat("PhaseScale", &grassMaterial->mPhaseScale);
+    ImGui::ColorEdit3("WindDirection", (float*)&grassMaterial->mWindDirection);
+    ImGui::Text("Cloud");
+    ImGui::ColorEdit3("CloudWhiteColor", (float*)&grassMaterial->mCloudWhiteColor);
+    ImGui::ColorEdit3("CloudBlackColor", (float*)&grassMaterial->mCloudBlackColor);
+    ImGui::SliderFloat("CloudUVScale", &grassMaterial->mCloudUVScale, 0.0f, 100.0f);
+    ImGui::InputFloat("CloudSpeed", &grassMaterial->mCloudSpeed);
+    ImGui::SliderFloat("CloudLerp", &grassMaterial->mCloudLerp, 0.0f, 1.0f);
+    ImGui::Text("Light");
+    ImGui::InputFloat("Intensity", &dirLight->mIntensity);
     ImGui::End();
 
     // 3 执行UI渲染
@@ -202,9 +272,6 @@ int main() {
     while (glApp->update()) {
         cameraControl->update();
         renderer->setClearColor(clearColor);
-        // pass 01 将box渲染到colorAttachment上，新的fbo上
-//        renderer->render(sceneOffscreen, camera, dirLight, ambLight, framebuffer->mFBO);
-        // pass 02 将colorAttachment作为纹理渲染到整个屏幕上
         renderer->render(scene, camera, dirLight, ambLight);
         renderIMGUI();
     }

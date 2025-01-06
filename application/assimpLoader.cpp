@@ -4,7 +4,6 @@
 #include "assimpLoader.h"
 #include "../glframework/tools/tools.h"
 #include "../glframework/material/phongMaterial.h"
-#include "../glframework/texture.h"
 
 Object *AssimpLoader::load(const std::string &path) {
     // 拿出模型所在目录

@@ -20,6 +20,7 @@ struct DirectionalLight {
    vec3 direction;
    vec3 color;
    float specularIntensity;
+   float intensity;
 };
 
 struct PointLight {
@@ -92,6 +93,7 @@ vec3 calculateSpotLight(SpotLight light, vec3 normal, vec3 viewDir) {
 }
 
 vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir) {
+   light.color *= light.intensity;
    // 计算光照的通用数据
    vec3 objectColor = texture(sampler, uv).xyz;
    vec3 lightDir = normalize(light.direction);
