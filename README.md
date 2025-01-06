@@ -429,7 +429,7 @@ void render(GLuint program, GLuint vao) {
 
 深度检测的写入权限：希望当然绘制的Mesh参与深度检测，但是不要更新深度缓冲(绘制透明物体)
 
-![1735300009233](C:\Code\Cpp\Clion\OpenGL\images\1735300009233.png)
+![1735300009233](images\1735300009233.png)
 
 #### Z-Fighting
 
@@ -444,29 +444,29 @@ void render(GLuint program, GLuint vao) {
 
 - 当两个平面基本平行于镜头，只需要把其中一个的深度值+offset即可
 
-  ![1735373806713](C:\Code\Cpp\Clion\OpenGL\images\1735373806713.png)
+  ![1735373806713](images\1735373806713.png)
 
 #### 多边形偏移函数
 
-![1735375764961](C:\Code\Cpp\Clion\OpenGL\images\1735375764961.png)
+![1735375764961](images\1735375764961.png)
 
 #### PolygonOffset-倾斜导致
 
-![1735375375357](C:\Code\Cpp\Clion\OpenGL\images\1735375375357.png)
+![1735375375357](images\1735375375357.png)
 
 ### 模板测试
 
 **模板缓冲**：与深度缓冲相似(一张画布)，记录了当前绘制的物体覆盖了哪些像素区域。借助模板缓冲，可以知道哪些像素被绘制过，进而制订规则，只有通过本规则测试的像素才能绘制出来。
 
-![1735377331907](C:\Code\Cpp\Clion\OpenGL\images\1735377331907.png)
+![1735377331907](images\1735377331907.png)
 
 #### 模板测试API
 
-![1735378046082](C:\Code\Cpp\Clion\OpenGL\images\1735378046082.png)
+![1735378046082](images\1735378046082.png)
 
-![1735388682454](C:\Code\Cpp\Clion\OpenGL\images\1735388682454.png)
+![1735388682454](images\1735388682454.png)
 
-![1735388850929](C:\Code\Cpp\Clion\OpenGL\images\1735388850929.png)
+![1735388850929](images\1735388850929.png)
 
 ### 颜色混合
 
@@ -474,9 +474,9 @@ void render(GLuint program, GLuint vao) {
 
 #### OpenGL颜色混合API
 
-![1735456348141](C:\Code\Cpp\Clion\OpenGL\images\1735456348141.png)
+![1735456348141](images\1735456348141.png)
 
-![1735456673692](C:\Code\Cpp\Clion\OpenGL\images\1735456673692.png)
+![1735456673692](images\1735456673692.png)
 
 ### 透明物体绘制策略
 
@@ -494,7 +494,7 @@ void render(GLuint program, GLuint vao) {
 
 #### 面剔除-API
 
-![1735612105145](C:\Code\Cpp\Clion\OpenGL\images\1735612105145.png)
+![1735612105145](images\1735612105145.png)
 
 ### 
 
@@ -733,7 +733,35 @@ void prepareTexture() {
 }
 ```
 
+### 立方体贴图(CubeMap)
 
+一个立方体贴图对象包括了六个图片，像一个盒子一样。包裹住摄像机
+
+**采样执行方式**：使用1x1x1的立方体，每个像素的相机坐标系的位置作为采样的向量
+
+### 球形投影贴图(SphericalMap)
+
+可以理解为把一个球形的外皮扒下来，展开成一张2D图片
+
+**球形贴图采样逻辑**：依然使用一个1x1x1的box作为天空盒载体，依然使用它的像素原始几何坐标作为采样向量。
+
+#### 球体极坐标
+
+单位球体上任何一个点，都可以使用经纬角度进行表示，这种表示方法称为极坐标(Polar Coordinate)
+
+经线角$phi$
+
+纬线角$theta$
+
+### 实例绘制(Instance Draw)
+
+通过调用一次Draw函数，向GPU发送一次DrawCall，绘制多个物体的方式，叫做**实例绘制**。
+
+![1736044645700](images\1736044645700.png)
+
+#### 实例绘制API
+
+![1736044843972](images\1736044843972.png)
 
 ## MipMap(多级渐远纹理)
 
@@ -947,13 +975,13 @@ Phong材质是其中一个子类
 
 场景中存在两种物体：Mesh与空物体(Object)
 
-![1735182006325](C:\Code\Cpp\Clion\OpenGL\images\1735182006325.png)
+![1735182006325](images\1735182006325.png)
 
 #### 基于场景(Scene)的渲染流程
 
 场景的渲染是一个递归的过程
 
-![1735183397078](C:\Code\Cpp\Clion\OpenGL\images\1735183397078.png)
+![1735183397078](images\1735183397078.png)
 
 ## 帧缓冲
 
@@ -970,29 +998,19 @@ GLFW+OpenGL在程序初始化的时候，就提供了一张用于渲染到屏幕
 
 ### 帧缓冲-API
 
-![1735614474469](C:\Code\Cpp\Clion\OpenGL\images\1735614474469.png)
+![1735614474469](images\1735614474469.png)
 
 ### 颜色附件创建(ColorAttachment)
 
 颜色附件，本质上来讲就是一个长宽与窗体大小相等的Texture纹理图片
 
-![1735615016575](C:\Code\Cpp\Clion\OpenGL\images\1735615016575.png)
+![1735615016575](images\1735615016575.png)
 
 ### 深度与模板附件创建(DepthStencilAttachment)
 
 深度与模板缓存，一般情况下可以分配在同一个缓存中；每个像素对应32个bit的话，深度缓存用掉24bit，模板缓存用8bit
 
-![1735615359746](C:\Code\Cpp\Clion\OpenGL\images\1735615359746.png)
-
-## 立方体贴图(CubeMap)
-
-一个立方体贴图对象包括了六个图片，像一个盒子一样。包裹住摄像机
-
-**采样执行方式**：使用1x1x1的立方体，每个像素的相机坐标系的位置作为采样的向量
-
-## 球形投影贴图(SphericalMap)
-
-可以理解为把一个球形的外皮扒下来，展开成一张2D图片
+![1735615359746](images\1735615359746.png)
 
 
 
